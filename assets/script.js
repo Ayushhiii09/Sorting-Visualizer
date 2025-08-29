@@ -31,11 +31,11 @@ var margin_element;
 var algo_selected;
 
 function updateValues() {
-    array_container_width = Math.floor( $("#array-container").width() );
+    array_container_width = Math.floor($("#array-container").width());
     element_width_max = Math.floor(array_container_width / 20);
 
     margin_element = 2;
-    if( parseInt( $(window).width() ) < 1200 )
+    if (parseInt($(window).width()) < 1200)
         margin_element = 1;
 }
 
@@ -43,7 +43,7 @@ function findElementWidth() {
     element_width = Math.floor(array_container_width / size);
     element_width -= 2 * margin_element;
 
-    if(element_width > element_width_max)
+    if (element_width > element_width_max)
         element_width = element_width_max;
 }
 
@@ -51,10 +51,10 @@ function createArray() {
     arr = [];
     $("#array").html('');
 
-    for(var i = 0; i < size; i++) {
-        var n = Math.floor( Math.random() * (MAX - MIN + 1) ) + MIN;
+    for (var i = 0; i < size; i++) {
+        var n = Math.floor(Math.random() * (MAX - MIN + 1)) + MIN;
         arr.push(n);
-        
+
         var $element = $('<div>');
         $element.attr('id', "e" + i);
         $element.attr('class', "element");
@@ -76,7 +76,7 @@ function setColor(id, color) {
 }
 
 function setColorRange(p, r, color) {
-    for(var i = p; i <= r; i++)
+    for (var i = p; i <= r; i++)
         $("#e" + i).css('background-color', color);
 }
 
@@ -97,6 +97,7 @@ function disableOthers() {
     $("#randomize").prop('disabled', true);
     $("#size-slider").prop('disabled', true);
     $(".algo-btn").prop('disabled', true);
+    $("#reset").prop('disabled', true);
 }
 
 function enableOthers() {
@@ -104,92 +105,101 @@ function enableOthers() {
     $("#randomize").prop('disabled', false);
     $("#size-slider").prop('disabled', false);
     $(".algo-btn").prop('disabled', false);
+    $("#reset").prop('disabled', false);
 }
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
+    // Initialize sliders
     $("#size-slider").attr('min', MIN_SIZE);
     $("#size-slider").attr('max', MAX_SIZE);
     $("#size-slider").attr('value', DEFAULT_SIZE);
+    $("#size-value").text(DEFAULT_SIZE);
 
     $("#speed-slider").attr('min', MIN_SPEED);
     $("#speed-slider").attr('max', MAX_SPEED);
     $("#speed-slider").attr('value', DEFAULT_SPEED);
+    $("#speed-value").text(DEFAULT_SPEED);
 
     size = DEFAULT_SIZE;
     delay = WAITING_TIME * Math.pow(2, MAX_SPEED - DEFAULT_SPEED);
 
     updateValues();
-    
     findElementWidth();
     createArray();
 
-    $("#randomize").click(
-        function() {
-            createArray();
+    // Randomize array
+    $("#randomize").click(function () {
+        createArray();
+    });
+
+    // Algorithm selection
+    $(".algo-btn").click(function () {
+        algo_selected = $(this).html();
+
+        $(".algo-btn-active").removeClass('algo-btn-active');
+        $(this).addClass('algo-btn-active');
+
+        $("#no-algo-warning").removeClass('display-flex');
+        $("#no-algo-warning").addClass('display-none');
+    });
+
+    // Sort button
+    $("#sort").click(async function () {
+        disableOthers();
+        setColorRange(0, size - 1, UNSORTED);
+
+        if (algo_selected == "Bubble Sort")
+            await bubbleSort();
+        else if (algo_selected == "Selection Sort")
+            await selectionSort();
+        else if (algo_selected == "Insertion Sort")
+            await insertionSort();
+        else if (algo_selected == "Merge Sort")
+            await mergeSort(0, size - 1);
+        else if (algo_selected == "Quicksort")
+            await quicksort(0, size - 1);
+        else if (algo_selected == "Heapsort")
+            await heapsort();
+        else {
+            $("#no-algo-warning").removeClass('display-none');
+            $("#no-algo-warning").addClass('display-flex');
         }
-    );
 
-    $(".algo-btn").click(
-        function() {
-            algo_selected = $(this).html();
+        enableOthers();
+    });
 
-            $(".algo-btn-active").removeClass('algo-btn-active');
-            $(this).addClass('algo-btn-active');
+    // Reset button
+    $("#reset").click(function () {
+        createArray();
+    });
 
-            $("#no-algo-warning").removeClass('display-flex');
-            $("#no-algo-warning").addClass('display-none');
-        }
-    );
-
-    $("#sort").click(
-        async function() {
-            disableOthers();
-
-            setColorRange(0, size - 1, UNSORTED);
-
-            if(algo_selected == "Bubble Sort")
-                await bubbleSort();
-            else if(algo_selected == "Selection Sort")
-                await selectionSort();
-            else if(algo_selected == "Insertion Sort")
-                await insertionSort();
-            else  if(algo_selected == "Merge Sort")
-                await mergeSort(0, size - 1);
-            else if(algo_selected == "Quicksort")
-                await quicksort(0, size - 1);
-            else if(algo_selected == "Heapsort")
-                await heapsort();
-            else {
-                $("#no-algo-warning").removeClass('display-none');
-                $("#no-algo-warning").addClass('display-flex');
-            }
-
-            enableOthers();
-        }
-    );
-
-    $("#size-slider").on('input', function() {
+    // Array size slider
+    $("#size-slider").on('input', function () {
         size = $(this).val();
+        $("#size-value").text(size);
 
         findElementWidth();
         createArray();
     });
 
-    $("#speed-slider").on('input', function() {
-        delay = WAITING_TIME * Math.pow(2, MAX_SPEED - $(this).val());
+    // Speed slider
+    $("#speed-slider").on('input', function () {
+        let val = $(this).val();
+        delay = WAITING_TIME * Math.pow(2, MAX_SPEED - val);
+        $("#speed-value").text(val);
     });
 
-    $(window).resize(function() {
-        if(array_container_width != Math.floor( $("#array-container").width() )) {
+    // Resize handler
+    $(window).resize(function () {
+        if (array_container_width != Math.floor($("#array-container").width())) {
             updateValues();
-
             findElementWidth();
 
-            for(var i = 0; i < size; i++) {
+            for (var i = 0; i < size; i++) {
                 $("#e" + i).css('width', element_width.toString() + 'px');
                 $("#e" + i).css('margin-left', margin_element + 'px');
                 $("#e" + i).css('margin-right', margin_element + 'px');
